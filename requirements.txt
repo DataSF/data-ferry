@@ -1,4 +1,5 @@
 pyyaml
 sodapy
 pytest
-coverage
+coveraged
+pycodestyle
