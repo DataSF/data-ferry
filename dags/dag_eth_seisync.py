@@ -5,7 +5,7 @@ import datetime
 from airflow import models
 from airflow.operators import python_operator
 
-from include.eth_seisync import sync
+from scripts.eth_seisync import sync
 
 default_dag_args = {
     'start_date': datetime.datetime(2019, 12, 30),

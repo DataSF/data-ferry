@@ -1,2 +1,4 @@
 pyyaml
 sodapy
+pytest
+coverage
