@@ -1,1 +1,1 @@
-FROM astronomerinc/ap-airflow:0.10.3-1.10.5-onbuild
+FROM astronomerinc/ap-airflow:1.10.7-alpine3.10-onbuild
