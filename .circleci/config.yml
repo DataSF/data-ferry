@@ -5,7 +5,8 @@
 version: 2
 jobs:
   build:
-    machine: true
+    docker:
+      - image: astronomerinc/ap-airflow:1.10.7-alpine3.10-onbuild
     steps:
       - checkout
       - restore_cache:
