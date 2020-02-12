@@ -5,8 +5,7 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: astronomerinc/ap-airflow:1.10.7-alpine3.10-onbuild
+    machine: true
     steps:
       - checkout
       - restore_cache:
@@ -14,16 +13,10 @@ jobs:
           - v1-dependencies-{{ checksum "Pipfile.lock" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
-      - run: 
-          name: install dependencies
-          command: |
-            sudo pip install pipenv
-            pipenv install --dev
       - run:
           name: run linter
           command: |
             pycodestyle .
-
       - save_cache:
           paths:
             - ./venv
