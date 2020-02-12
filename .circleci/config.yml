@@ -10,7 +10,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "Pipfile.lock" }}
+          - v1-dependencies-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
       - run:
@@ -20,7 +20,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "Pipfile.lock" }}
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
   deploy:
     docker:
       - image: astronomerinc/ap-airflow:1.10.7-alpine3.10-onbuild
