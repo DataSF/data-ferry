@@ -6,6 +6,7 @@ import requests
 import logging
 from sodapy import Socrata
 
+
 class Form700_Blocking:
     """
     Perform download of all Form 700 data
@@ -13,7 +14,8 @@ class Form700_Blocking:
     'Blocking' because the intention is to write an async version
     """
 
-    def __init__(self, credentials=None, socrata_config=None, schema_defs=None, get_unredacted=False):
+    def __init__(self, credentials=None, socrata_config=None, schema_defs=None,
+                 get_unredacted=False):
 
         self.logger = logging.getLogger(__name__)
         self.logger.info('****** Initialized Form 700 Netfile client ******')
@@ -23,9 +25,12 @@ class Form700_Blocking:
             'Accept': 'application/json',
         }
 
-        self.authUrl = 'https://netfile.com:443/Connect2/api/authenticate'
-        self.url_cover = 'https://netfile.com:443/Connect2/api/public/sei/export/cover'
-        self.url_schedule = 'https://netfile.com:443/Connect2/api/public/sei/export/schedule'
+        self.authUrl = \
+            'https://netfile.com:443/Connect2/api/authenticate'
+        self.url_cover = \
+            'https://netfile.com:443/Connect2/api/public/sei/export/cover'
+        self.url_schedule = \
+            'https://netfile.com:443/Connect2/api/public/sei/export/schedule'
 
         self.params = {
             'AgencyPrefix': 'SFO',
@@ -59,7 +64,7 @@ class Form700_Blocking:
             'scheduleE',
         ]
 
-        #TODO validate schema definitions
+        # TODO validate schema definitions
         self.schemas = schema_defs
         self.data = {}
         self.was_reset = {}
@@ -75,19 +80,24 @@ class Form700_Blocking:
             # to keep track of the DataSF dataset being reset
             self.was_reset[schedule] = False
 
-        #TODO validate socrata_config
+        # TODO validate socrata_config
         self.socrata_config = socrata_config
 
-        self.filer_cols = ['filingId', 'filerName', 'departmentName', 'positionName', 'offices', 'periodStart', 'periodEnd', 'filingDate']
+        self.filer_cols = ['filingId', 'filerName', 'departmentName',
+                           'positionName', 'offices', 'periodStart',
+                           'periodEnd', 'filingDate']
         self.filings = {}
 
         # total: total number of rows on Netfile
         # received: rows received from Netfile
         # send: rows to send to Socrata
         # created: rows created on Socrata
-        self.sanity_check = { k: {'received':0, 'send':0, 'created':0} for k in self.schedules }
-        self.sanity_check['cover'] = {'total':0, 'received':0, 'send':0, 'created':0}
-        self.sanity_check['items'] = {'total':0, 'received':0, 'send':0, 'created':0}
+        self.sanity_check = {k: {'received': 0, 'send': 0, 'created': 0}
+                             for k in self.schedules}
+        self.sanity_check['cover'] = {'total': 0, 'received': 0, 'send': 0,
+                                      'created': 0}
+        self.sanity_check['items'] = {'total': 0, 'received': 0, 'send': 0,
+                                      'created': 0}
 
     def stop_all_execution(self, msg):
         """
@@ -104,7 +114,8 @@ class Form700_Blocking:
         authenticate against the session
         """
         self.logger.info(f'Making authentication request')
-        return session.post(self.authUrl, data=self.netfile_creds, headers=self.headers)
+        return session.post(self.authUrl, data=self.netfile_creds,
+                            headers=self.headers)
 
     @staticmethod
     def castDate(date):
@@ -116,7 +127,7 @@ class Form700_Blocking:
         """
         regex = re.compile('^(\d+)\/(\d+)\/(\d{4})$')
 
-        if date == None:
+        if date is None:
             return None
         elif date == '':
             return None
@@ -129,8 +140,9 @@ class Form700_Blocking:
         elif len(date) != 33:
             return date
         else:
-            # TODO: make sure that socrata actually converts timezones correctly
-            return date[:19]#+date[27:]
+            # TODO: make sure that socrata actually converts timezones
+            # correctly
+            return date[:19]  # +date[27:]
 
     @staticmethod
     def flattenOffices(offices):
@@ -138,7 +150,9 @@ class Form700_Blocking:
         takes a list, flattens it, returns a string
         use for the "offices" portion of a cover item
         """
-        as_a_list = list(map(lambda office: f"{office['filerPosition']} - {office['filerDivisionBoardDistrict']}", offices))
+        as_a_list = list(map(lambda office:
+                         f"{office['filerPosition']} - \
+                            {office['filerDivisionBoardDistrict']}", offices))
         return ' '.join(as_a_list)
 
     @staticmethod
@@ -147,7 +161,8 @@ class Form700_Blocking:
         takes a list, flattens it, returns a string
         use for schedules A2, B, and C
         """
-        as_a_list = list(map(lambda income_source: f"{income_source['name']}", income_sources))
+        as_a_list = list(map(lambda income_source: f"{income_source['name']}",
+                         income_sources))
         return '|'.join(as_a_list)
 
     def explodeScheduleA2(self, item):
@@ -175,7 +190,7 @@ class Form700_Blocking:
         else:
             for property in item['realProperties']:
                 newitem = copy.deepcopy(item)
-                for k,v in property.items():
+                for k, v in property.items():
                     newitem[f"realProperty_{k}"] = v
                 del newitem['realProperties']
                 newitem = self.pickKeys(newitem, 'scheduleA2')
@@ -183,7 +198,7 @@ class Form700_Blocking:
         return res
 
     def explodeScheduleB(self, item):
-        for k,v in item['loan'].items():
+        for k, v in item['loan'].items():
             item[f"loan_{k}"] = v
         del item['loan']
         item = self.pickKeys(item, 'scheduleB')
@@ -194,7 +209,7 @@ class Form700_Blocking:
         run flattenoffices/incomesources first
         """
         res = []
-        new_props = ['amount','description','giftDate']
+        new_props = ['amount', 'description', 'giftDate']
         for gift in item['gifts']:
             newitem = copy.deepcopy(item)
             for k in new_props:
@@ -217,7 +232,7 @@ class Form700_Blocking:
         choose the keys for columns on datasf
         """
         datasf_keys = self.schemas[schedule_type].keys()
-        item = { k: item[k] for k in datasf_keys }
+        item = {k: item[k] for k in datasf_keys}
         return item
 
     def extractData(self, session, params, schedule_type):
@@ -233,7 +248,9 @@ class Form700_Blocking:
             response = session.post(url, params=params, headers=self.headers)
             if response.status_code not in [200, 201]:
                 raise Exception(
-                f'Error requesting Url: {url}, Response code: {response.status_code}. Error Message: {response.text}')
+                    f'Error requesting Url: {url}, Response code: \
+                    {response.status_code}. \
+                    Error Message: {response.text}')
         except Exception as ex:
             self.stop_all_execution(ex)
         return response
@@ -253,12 +270,14 @@ class Form700_Blocking:
         """
         expected = self.sanity_check['items']['total']
         received = self.sanity_check['items']['received']
-        self.logger.debug(f'Expected {expected} total schedule items, got {received}')
+        self.logger.debug(
+            f'Expected {expected} total schedule items, got {received}')
         for schedule_type in self.schedules:
             if schedule_type == 'cover':
                 continue
             received_schedule = self.sanity_check[schedule_type]['received']
-            self.logger.debug(f'     Got {received_schedule} items of {schedule_type}')
+            self.logger.debug(f'     Got {received_schedule} items of '
+                              f'{schedule_type}')
         return expected == received
 
     def transformCoverResponse(self, response_json, page_num, url=None):
@@ -273,13 +292,14 @@ class Form700_Blocking:
         self.logger.debug(msg)
 
         if (page_num == 1):
-            self.sanity_check['cover']['total'] = response_json['totalMatchingCount']
+            self.sanity_check['cover']['total'] = \
+                response_json['totalMatchingCount']
 
         # format filing for DataSF
         for row in response_json['filings']:
             # first deal with date string formatting
             for col in self.date_columns['cover']:
-                row[col]= self.castDate(row[col])
+                row[col] = self.castDate(row[col])
 
             # flatten the offices object
             row['offices'] = str(self.flattenOffices(row['offices']))
@@ -292,7 +312,7 @@ class Form700_Blocking:
 
             # choose only the keys we want
             datasf_keys = self.schemas['cover'].keys()
-            desired = { k: row[k] for k in datasf_keys }
+            desired = {k: row[k] for k in datasf_keys}
             data.append(desired)
 
         # add the total to the sanity_checker
@@ -321,7 +341,8 @@ class Form700_Blocking:
             if schedule_type == 'cover':
                 continue
             if (page_num == 1):
-                self.sanity_check['items']['total'] = response_json['totalMatchingCount']
+                self.sanity_check['items']['total'] = \
+                    response_json['totalMatchingCount']
             if len(response_json[schedule_type]) > 0:
                 received_items = len(response_json[schedule_type])
                 self.sanity_check[schedule_type]['received'] += received_items
@@ -335,12 +356,14 @@ class Form700_Blocking:
                     try:
                         item.update(self.filings[item['filingId']])
                     except KeyError as ex:
-                        self.stop_all_execution(f'Missing a filing record for id:{ex}')
+                        self.stop_all_execution(
+                            f'Missing a filing record for id: {ex}')
                     except Exception as ex:
                         self.stop_all_execution(ex)
 
                     # flatten some schedule data
-                    if schedule_type in ['scheduleA2','scheduleB', 'scheduleC']:
+                    if schedule_type in ['scheduleA2', 'scheduleB',
+                                         'scheduleC']:
                         item['incomeSources'] = self.flattenIncomeSources(
                             item['incomeSources']
                         )
@@ -386,7 +409,7 @@ class Form700_Blocking:
         """
         # TODO: implement retry, make requests after 1st async
         self.logger.debug(f'Sending to DataSF, id: {dataset}')
-        if was_reset == False:
+        if was_reset is False:
             res = soda_client.replace(dataset, data, content_type='json')
         else:
             res = soda_client.upsert(dataset, data, content_type='json')
@@ -397,7 +420,8 @@ class Form700_Blocking:
         chunk and load data to Socrata
         """
         dataset = self.socrata_config[schedule_type]
-        self.logger.debug(f'Starting to load {schedule_type}, sending to {dataset}')
+        self.logger.debug(
+            f'Starting to load {schedule_type}, sending to {dataset}')
         data = self.data[schedule_type]
         chunks = [data[x:x + 1000] for x in range(0, len(data), 1000)]
         for chunk in chunks:
@@ -412,7 +436,8 @@ class Form700_Blocking:
 
             # check for errors from socrata
             if (res['Errors'] > 0):
-                self.stop_all_execution(f'Error updating {dataset} with page {page_num} - {res}')
+                self.stop_all_execution(
+                    f'Error updating {dataset} with page {page_num} - {res}')
 
             # add totals to sanity_checker
             self.sanity_check[schedule_type]['created'] += res['Rows Created']
@@ -428,7 +453,9 @@ class Form700_Blocking:
         received = self.sanity_check[schedule_type]['received']
         send = self.sanity_check[schedule_type]['send']
         created = self.sanity_check[schedule_type]['created']
-        self.logger.info(f'Received {received} {schedule_type} items, sent {send}, created {created}')
+        self.logger.info(
+            f'Received {received} {schedule_type} items, sent {send}'
+            f', created {created}')
         return send == created
 
     def logPageCounts(self, schedule_type, data):
@@ -437,7 +464,8 @@ class Form700_Blocking:
         """
         total_pages = data['totalMatchingPages']
         total_records = data['totalMatchingCount']
-        self.logger.info(f'Total pages in {schedule_type} datasets {total_pages}')
+        self.logger.info(
+            f'Total pages in {schedule_type} datasets {total_pages}')
         self.logger.info(f'Total {schedule_type} records {total_records}')
         return None
 
@@ -448,21 +476,22 @@ class Form700_Blocking:
         use a single Session object to communicate with Netfile
         """
         # Socrata client context manager
-        with Socrata("data.sfgov.org", self.appToken, **self.soda_creds) as soda_client:
+        with Socrata("data.sfgov.org",
+                     self.appToken, **self.soda_creds) as soda_client:
             # get the data from NetFile
             with requests.Session() as session:
                 # first, authenticate
                 auth = self.authenticate(session)
                 try:
                     if auth.status_code not in [200, 201, 202]:
-                        raise Exception(
-                            f'Error authenticating. Error Message: {auth.text}')
+                        raise Exception('Error authenticating. Error Message: '
+                                        f'{auth.text}')
                 except Exception as ex:
                     self.stop_all_execution(ex)
 
                 # start to extract cover pages
                 current_page = 1
-                params = {'CurrentPageIndex':current_page}
+                params = {'CurrentPageIndex': current_page}
                 params.update(self.params)
                 cover_page = self.extractData(session, params, 'cover')
                 data = cover_page.json()
@@ -475,20 +504,25 @@ class Form700_Blocking:
                 while current_page <= total_pages:
                     params['CurrentPageIndex'] = current_page
                     cover_page = self.extractData(session, params, 'cover')
-                    self.transformCoverResponse(cover_page.json(), current_page, cover_page.url)
+                    self.transformCoverResponse(cover_page.json(),
+                                                current_page, cover_page.url)
                     current_page += 1
 
                 # check we extracted all the pages
-                self.logger.info(f"Finished extracting covers {json.dumps(self.sanity_check['cover'])}")
+                self.logger.info(
+                    "Finished extracting covers "
+                    f"{json.dumps(self.sanity_check['cover'])}")
                 cover_extract_success = self.extractConfirmCover()
-                if cover_extract_success == False:
-                    self.stop_all_execution('Did not receive expected number of cover items')
+                if cover_extract_success is False:
+                    self.stop_all_execution(
+                        'Did not receive expected number of cover items')
 
                 # load the cover data (send to DataSF)
                 self.loadData(soda_client, 'cover')
                 cover_load_success = self.loadConfirm('cover')
-                if cover_load_success == False:
-                    self.stop_all_execution('Did not load expected number of cover items')
+                if cover_load_success is False:
+                    self.stop_all_execution(
+                        'Did not load expected number of cover items')
 
                 # start to extract schedules
                 current_page = 1
@@ -496,27 +530,33 @@ class Form700_Blocking:
                 schedule_page = self.extractData(session, params, 'schedule')
                 data = schedule_page.json()
                 self.logPageCounts('schedule', data)
-                self.transformScheduleResponse(data, current_page, schedule_page.url)
+                self.transformScheduleResponse(data, current_page,
+                                               schedule_page.url)
 
                 # extract all the schedule pages
                 current_page += 1
                 total_pages = data['totalMatchingPages']
                 while current_page < total_pages:
                     params['CurrentPageIndex'] = current_page
-                    schedule_page = self.extractData(session, params, 'schedule')
+                    schedule_page = self.extractData(session, params,
+                                                     'schedule')
                     data = schedule_page.json()
-                    self.transformScheduleResponse(data, current_page, schedule_page.url)
+                    self.transformScheduleResponse(data, current_page,
+                                                   schedule_page.url)
                     current_page += 1
                 params['CurrentPageIndex'] = current_page
                 schedule_page = self.extractData(session, params, 'schedule')
                 data = schedule_page.json()
-                self.transformScheduleResponse(data, current_page, schedule_page.url)
+                self.transformScheduleResponse(data, current_page,
+                                               schedule_page.url)
 
                 # check we extracted all the schedule pages
-                self.logger.info(f"Finished schedule extracts {self.sanity_check['items']}")
+                self.logger.info(
+                    f"Finished schedule extracts {self.sanity_check['items']}")
                 schedule_extract_success = self.extractConfirmSchedule()
-                if schedule_extract_success == False:
-                    self.stop_all_execution('Did not receive expected number of schedule items')
+                if schedule_extract_success is False:
+                    self.stop_all_execution(
+                        'Did not receive expected number of schedule items')
 
             # start loading schedule data (without the Netfile Session)
             for schedule_type in self.schedules:
@@ -527,7 +567,8 @@ class Form700_Blocking:
                 self.loadConfirm(schedule_type)
             self.logger.info('Finished loading schedule data')
             schedule_load_success = self.loadConfirm('items')
-            if schedule_load_success == False:
-                self.stop_all_execution('Did not load expected number of schedule items')
+            if schedule_load_success is False:
+                self.stop_all_execution(
+                    'Did not load expected number of schedule items')
 
         self.logger.info('****** Finished script execution ******')
