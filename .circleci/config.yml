@@ -13,14 +13,24 @@ jobs:
           - v1-dependencies-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
-      - run:
-          name: run linter
+      - run:    
+          name: Install test deps
           command: |
-            pycodestyle .
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+            # Use a virtual env to encapsulate everything in one folder for
+            # caching. And make sure it lives outside the checkout, so that any
+            # style checkers don't run on all the installed modules
+            python -m venv ~/.venv
+            . ~/.venv/bin/activate
+            pip install -r requirements.txt
+        - save_cache:
+            paths:
+              - ~/.venv
+            key: v1-dependencies-{{ checksum "requirements.txt" }}
+        - run:
+            name: run linter
+            command: |
+              . ~/.venv/bin/activate
+              pycodestyle .
   deploy:
     docker:
       - image: astronomerinc/ap-airflow:1.10.7-alpine3.10-onbuild
