@@ -22,15 +22,15 @@ jobs:
             python -m venv ~/.venv
             . ~/.venv/bin/activate
             pip install -r requirements.txt
-        - save_cache:
-            paths:
-              - ~/.venv
-            key: v1-dependencies-{{ checksum "requirements.txt" }}
-        - run:
-            name: run linter
-            command: |
-              . ~/.venv/bin/activate
-              pycodestyle .
+      - save_cache:
+          paths:
+            - ~/.venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+      - run:
+          name: run linter
+          command: |
+            . ~/.venv/bin/activate
+            pycodestyle .
   deploy:
     docker:
       - image: astronomerinc/ap-airflow:1.10.7-alpine3.10-onbuild
