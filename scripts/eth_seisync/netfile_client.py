@@ -125,7 +125,7 @@ class Form700_Blocking:
         and Python datetime deals with style YYYY-MM-DDTHH:mm:ss.f-HHmm,
         and also, some fields might have user-input mm/dd/yyyy format
         """
-        regex = re.compile('^(\d+)\/(\d+)\/(\d{4})$')
+        regex = re.compile(r'^(\d+)\/(\d+)\/(\d{4})$')
 
         if date is None:
             return None

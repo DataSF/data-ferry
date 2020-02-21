@@ -17,18 +17,20 @@ socrata_keyId = models.Variable.get('socrata_keyId')
 socrata_keySecret = models.Variable.get('socrata_keySecret')
 socrata_appToken = models.Variable.get('socrata_appToken')
 credentials = {
-    "netfile":{
+    "netfile": {
         "login": netfile_login,
         "password": netfile_password
     },
-    "socrata":{
+    "socrata": {
         "appToken": socrata_appToken,
         "keyId": socrata_keyId,
         "keySecret": socrata_keySecret
     }
 }
-socrata_config_redacted = models.Variable.get('socrata_config_redacted', deserialize_json=True)
-socrata_config_unredacted = models.Variable.get('socrata_config_unredacted', deserialize_json=True)
+socrata_config_redacted = models.Variable.get('socrata_config_redacted',
+                                              deserialize_json=True)
+socrata_config_unredacted = models.Variable.get('socrata_config_unredacted',
+                                                deserialize_json=True)
 schema_defs = models.Variable.get('schema_defs', deserialize_json=True)
 
 redacted_kwargs = {
@@ -61,4 +63,3 @@ with models.DAG(
         )
 
     redacted >> unredacted
-    
